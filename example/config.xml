@@ -19,6 +19,7 @@
     <preference name="LottieLoopAnimation" value="true" />
 
     <platform name="android">
+        <preference name="GradlePluginKotlinEnabled" value="true" />
         <!-- Lottie specific config -->
         <preference name="LottieAnimationLocation" value="https://assets.lottiefiles.com/datafiles/PEt3QhOjDXHDIGH/data.json" />
         <preference name="LottieBackgroundColor" value="#fff000a3" />
