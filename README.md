@@ -106,10 +106,10 @@ await lottie.splashscreen.show(location?: string, remote?: boolean, width?: numb
     <preference name="LottieCancelOnTap" value="true" />
 ```
 
--   `LottieHideTimeout` (Double, default `0`). Duration in seconds after which the Lottie animation should be hidden.
+-   `LottieHideTimeout` (Double for iOS and Integer for Android, default `0`). Duration after which the Lottie animation should be hidden. **CAUTION:** iOS reads this value in **SECONDS**, but e.g., `0.5` is supported. Android reads this value in **MILLISECONDS**!
 
 ```xml
-    <preference name="LottieHideTimeout" value="10" />
+    <preference name="LottieHideTimeout" value="?" /> <!-- CAUTION: iOS reads this value in **SECONDS**, Android reads this value in **MILLISECONDS**>
 ```
 
 -   `LottieBackgroundColor` (String, default `#ffffff`). Background color of the overlay. Can be used with alpha values, too. (For more information see the [8 digits notation of RGB notation](https://drafts.csswg.org/css-color/#hex-notation))
@@ -166,10 +166,10 @@ await lottie.splashscreen.show(location?: string, remote?: boolean, width?: numb
     <preference name="LottieScaleType" value="CENTER_CROP" />
 ```
 
--   `LottieCacheDisabled` (Boolean, default `false`). Disables caching of animations.
+-   `LottieFadeOutDuration` (Double for iOS and Integer for Android, default `0`). Duration for the fade out animation. **CAUTION:** iOS reads this value in **SECONDS**, but e.g., `0.5` is supported. Android reads this value in **MILLISECONDS**! the Set to `0` disable the fade out animation.
 
 ```xml
-    <preference name="LottieCacheDisabled" value="true" />
+    <preference name="LottieFadeOutDuration" value="?" /> <!-- CAUTION: iOS reads this value in **SECONDS**, Android reads this value in **MILLISECONDS**>
 ```
 
 ---

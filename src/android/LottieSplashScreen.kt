@@ -1,8 +1,12 @@
 package de.dustplanet.cordova.lottie
 
+import android.R.style
 import android.app.Dialog
+import android.graphics.drawable.ColorDrawable
 import android.os.Handler
 import android.util.Log
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.widget.ImageView
 import com.airbnb.lottie.LottieAnimationView
 import com.airbnb.lottie.LottieComposition
@@ -10,13 +14,11 @@ import com.airbnb.lottie.LottieCompositionFactory
 import com.airbnb.lottie.LottieDrawable
 import com.airbnb.lottie.LottieTask
 import com.airbnb.lottie.RenderMode
-import java.lang.Exception
 import org.apache.cordova.CallbackContext
 import org.apache.cordova.CordovaArgs
 import org.apache.cordova.CordovaPlugin
 
 class LottieSplashScreen : CordovaPlugin() {
-
     private lateinit var splashDialog: Dialog
     private lateinit var animationView: LottieAnimationView
 
@@ -43,8 +45,7 @@ class LottieSplashScreen : CordovaPlugin() {
     override fun execute(action: String, args: CordovaArgs, callbackContext: CallbackContext): Boolean {
         when (action) {
             "hide" -> return try {
-                destroyView()
-                callbackContext.success()
+                destroyView(callbackContext)
                 true
             } catch (e: Exception) {
                 callbackContext.error(e.message)
@@ -67,11 +68,11 @@ class LottieSplashScreen : CordovaPlugin() {
         }
     }
 
-    private fun destroyView() {
+    private fun destroyView(callbackContext: CallbackContext? = null) {
         cordova.activity.runOnUiThread {
             animationView.cancelAnimation()
             if (::splashDialog.isInitialized) {
-                splashDialog.dismiss()
+                dismissDialog(callbackContext)
             }
         }
     }
@@ -92,7 +93,8 @@ class LottieSplashScreen : CordovaPlugin() {
                 }
 
                 val remoteEnabled = remote ?: preferences.getBoolean("LottieRemoteEnabled", false)
-                val animationLocation = location ?: preferences.getString("LottieAnimationLocation", "")
+                val animationLocation = location
+                        ?: preferences.getString("LottieAnimationLocation", "")
                 if (animationLocation.isNullOrBlank()) {
                     Log.e(LOG_TAG, "LottieAnimationLocation has to be configured!")
                     this.destroyView()
@@ -114,7 +116,7 @@ class LottieSplashScreen : CordovaPlugin() {
                         })
                     }
                     else -> {
-                        comp = LottieCompositionFactory.fromUrl(context, animationLocation, when {
+                        comp = LottieCompositionFactory.fromAsset(context, animationLocation, when {
                             cacheDisabled -> null
                             else -> "asset_$animationLocation"
                         })
@@ -139,9 +141,15 @@ class LottieSplashScreen : CordovaPlugin() {
                 }
 
                 animationView.scaleType = ImageView.ScaleType.valueOf(preferences.getString("LottieScaleType", "FIT_CENTER").toUpperCase())
-                animationView.setBackgroundColor(ColorHelper.parseColor(preferences.getString("LottieBackgroundColor", "#ffffff")))
+                val color = ColorHelper.parseColor(preferences.getString("LottieBackgroundColor", "#ffffff"))
+                animationView.setBackgroundColor(color)
 
-                splashDialog = Dialog(context, android.R.style.Theme_Translucent_NoTitleBar)
+                val fullScreen = preferences.getBoolean("LottieFullScreen", false)
+                splashDialog = Dialog(context, when {
+                    fullScreen -> style.Theme_NoTitleBar_Fullscreen
+                    else -> style.Theme_Translucent_NoTitleBar
+                })
+                splashDialog.window?.setBackgroundDrawable(ColorDrawable(color))
                 splashDialog.setContentView(animationView)
                 splashDialog.setCancelable(false)
 
@@ -153,14 +161,14 @@ class LottieSplashScreen : CordovaPlugin() {
                     val cancelOnTap = preferences.getBoolean("LottieCancelOnTap", false)
                     if (cancelOnTap) {
                         animationView.cancelAnimation()
-                        splashDialog.dismiss()
+                        dismissDialog()
                     }
                 }
 
                 val delay = preferences.getInteger("LottieHideTimeout", 0)
                 if (delay > 0) {
                     val handler = Handler()
-                    handler.postDelayed(splashDialog::dismiss, delay.toLong() * 1000)
+                    handler.postDelayed({ dismissDialog() }, delay.toLong())
                 }
             }
         }
@@ -190,6 +198,32 @@ class LottieSplashScreen : CordovaPlugin() {
 
     private fun convertPixelsToDp(px: Double): Int {
         return (px * webView.context.resources.displayMetrics.density).toInt()
+    }
+
+    private fun dismissDialog(callbackContext: CallbackContext? = null) {
+        val fadeDuration = preferences.getInteger("LottieFadeOutDuration", 0)
+        when {
+            fadeDuration > 0 -> {
+                val fadeOut = AlphaAnimation(1f, 0f)
+                fadeOut.duration = fadeDuration.toLong()
+                animationView.animation = fadeOut
+                animationView.startAnimation(fadeOut)
+                fadeOut.setAnimationListener(object : Animation.AnimationListener {
+                    override fun onAnimationStart(animation: Animation?) {}
+
+                    override fun onAnimationEnd(animation: Animation?) {
+                        splashDialog.dismiss()
+                        callbackContext?.success()
+                    }
+
+                    override fun onAnimationRepeat(animation: Animation?) {}
+                })
+            }
+            else -> {
+                splashDialog.dismiss()
+                callbackContext?.success()
+            }
+        }
     }
 
     companion object {
